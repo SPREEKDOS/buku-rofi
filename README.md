@@ -64,9 +64,9 @@ buku-rofi
 
 ## Keybindings
 
-- <kbd>Alt+W</kbd>: Show options
+- <kbd>Alt+W</kbd>: Show matching options
 - <kbd>Alt+A</kbd>: Add bookmark
-- <kbd>Alt+Q</kbd>: Hide listview
+- <kbd>Alt+Q</kbd>: Hide results
 - <kbd>Delete</kbd>: Delete bookmark
 - <kbd>Insert</kbd>: Edit bookmark
 
