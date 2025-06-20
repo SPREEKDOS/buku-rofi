@@ -1,0 +1,83 @@
+@theme "gruvbox-dark-hard.rasi"
+// @SPREEKDOS/buku-rofi/buku-rofi.rasi
+configuration {
+    case-sensitive: false ;
+    kb-custom-1 : "Alt+w" ; // return code is 10
+    kb-custom-2 : "Alt+a" ; // return code is 11
+    kb-remove-char-forward : "Control+d" ;
+    kb-secondary-paste : "Control+v" ;
+    kb-custom-3 : "Delete"; // return code is 12
+    kb-custom-4 : "Insert"; // return code is 13
+    kb-custom-5 : "Alt+q"; // return code is 14
+}
+* {
+    font :  "Awasome 12" ;
+    text-color : @foreground ;
+}
+
+window {
+    children : [ mainbox ] ;
+    orientation : vertical ;
+    location : north ;
+    anchor : north ;
+    width : 100% ;
+    border: 1 ;
+}
+mainbox {
+    children : [ box-hint, Inputbar, listview] ;
+    orientation : vertical ;
+}
+box-hint {
+    children : [ textbox-hint-left, textbox-hint-right ] ;
+    orientation :  horizontal ;
+    border : 0 0 1 0;
+}
+Inputbar {
+    children : [ prompt, textbox-prompt-sep, entry, textbox-pipe, textbox-matching, case-indicator, num-filtered-rows, textbox-slash, num-rows ] ;
+    orientation :  horizontal ;
+    spacing : 5 ;
+}
+listview {
+    anchor : north ;
+    expand : false ;
+    fixed-height: false ;
+    dynamic : true ;
+}
+textbox-hint-left {
+    content : "<span font_scale='subscript' >       Alt+W : Show options         Alt+A : Add bookmark         Alt+Q : Hide listview        </span>" ;
+    horizontal-align : 0 ;
+    markup : true ;
+}
+textbox-hint-right {
+    content : "<span font_scale='subscript' >       Insert Key : Edit bookmark          Delete Key : Delete bookmark      </span>" ;
+    horizontal-align : 1 ;
+    markup : true ;
+}
+prompt {
+    padding : 0 7 ;
+}
+entry {
+    expand : true ;
+    blink : true ;
+    placeholder-color : @gruvbox-dark-gray ;
+    placeholder : "example.com  tag1,tag2  Title" ;
+    cursor : text ;
+}
+textbox-pipe {
+    expand : false ;
+    content : "|" ;
+    
+}
+textbox-matching {
+    expand : false ;
+}
+textbox-slash {
+    expand : false ;
+    content : "/" ;
+}
+num-filtered-rows {
+    padding : 0 0 7 0 ;
+}
+num-rows {
+    padding : 0 7 0 0 ;
+}
