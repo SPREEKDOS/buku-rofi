@@ -9,6 +9,7 @@ configuration {
     kb-custom-3 : "Delete"; // return code is 12
     kb-custom-4 : "Insert"; // return code is 13
     kb-custom-5 : "Alt+q"; // return code is 14
+    kb-custom-6 : "Alt+1"; // return code is 15
 }
 * {
     font :  "Awasome 12" ;
@@ -44,7 +45,7 @@ listview {
     dynamic : true ;
 }
 textbox-hint-left {
-    content : "<span font_scale='subscript' >       Alt+W : Show options         Alt+A : Add bookmark         Alt+Q : Hide listview        </span>" ;
+    content : "<span font_scale='subscript' >       Alt+W : Show options         Alt+1 : Use saved tags         Alt+A : Add bookmark         Alt+Q : Hide listview        </span>" ;
     horizontal-align : 0 ;
     markup : true ;
 }
