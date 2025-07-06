@@ -66,7 +66,7 @@ function check_command --description "Ensure all required external commands are 
                     echo "To install, run: sudo apt install $missing_cmds"
                 case arch artix
                     echo "To install, run: sudo pacman -S $missing_cmds"
-                case fedora rhel centos
+                case fedora rhel centosy
                     echo "To install, run: sudo dnf install $missing_cmds"
                 case opensuse
                     echo "To install, run: sudo zypper install $missing_cmds"
@@ -81,10 +81,12 @@ function check_command --description "Ensure all required external commands are 
     # Fish version check for portability
     set min_version 2.7.0
     set current_version (fish --version | string match -r '\d+\.\d+\.\d+')
-    if test (count $current_version) -eq 1
-        if not test (string compare --order $current_version $min_version) -ge 0
-            echo "$script_name: Warning: Your Fish version ($current_version) may be too old. Some features may not work as expected."
-        end
+    set versions $min_version\n$current_version
+    set sorted (printf "%s\n" $versions | sort -V | head -n1)
+
+    if test "$sorted" != "$min_version"
+        echo "Your Fish version ($current_version) is older than required ($min_version)."
+        exit 1
     end
 end
 
@@ -92,10 +94,10 @@ end
 function init_script --description "Initialize script name and UI variables."
     set -g script_name (status basename)
     set -g disable_defined_custom_keybind 'configuration { kb-custom-1 : "" ;
-    kb-custom-2 : "" ; 
-    kb-custom-3 : "" ; 
-    kb-custom-4 : "" ; 
-    kb-custom-5 : "" ; 
+    kb-custom-2 : "" ;
+    kb-custom-3 : "" ;
+    kb-custom-4 : "" ;
+    kb-custom-5 : "" ;
     kb-custom-6 : "" ;
     }'
     set -g matching_buku normal
@@ -104,7 +106,7 @@ end
 # Export bookmarks to a file using buku.
 function buku_export --description "Export bookmarks to a file."
     if not set -q export_file
-        set export_file "$HOME/buku_export.json"
+        set export_file "$HOME/buku_export.md"
     end
     buku -e $export_file
     echo "$script_name: Bookmarks exported to $export_file"
@@ -113,11 +115,12 @@ end
 # Import bookmarks from a file using buku.
 function buku_import --description "Import bookmarks from a file."
     if not set -q import_file
-        set import_file "$HOME/buku_export.json"
+        set import_file "$HOME/buku_export.md"
     end
     if test -f $import_file
-        buku -i $import_file
+        echo n\ny | command buku --nostdin --np --nc -i $import_file
         echo "$script_name: Bookmarks imported from $import_file"
+        exit 0 # needs to restart to work correctly
     else
         echo "$script_name: $import_file not found."
     end
@@ -233,7 +236,7 @@ end
 # Delete a bookmark using buku, with confirmation dialog.
 function delete_buku --description "Delete the selected bookmark."
     if confirm_rofi "Are you sure you want to delete : $rofi_output[2]"
-        echo y | command buku --nostdin --np --nc --delete $rofi_output[1]
+        echo y | command buku --nostdin --np --nc --delete "$rofi_output[1]" # quotation is neccessary to avoid deleting all bookmarks
     end
 end
 
@@ -326,7 +329,7 @@ function main --description "Main UI loop for the bookmark manager."
             set -g previous_filter $rofi_output[3]
         end
         set bookmarks (buku --format 4 --print | awk -F ' ' '{print "[ " $1 " ]   " $2 "   " $NF }')
-        set -g rofi_output (echo -e (test -n "$bookmarks" ; and echo $bookmarks"\n")"Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
+        set -g rofi_output (echo -e (test -n "$bookmarks" ; and echo $bookmarks"\n") "Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
         $hide_results
         textbox-matching {content : \"$matching_buku\" ;  }")
         switch $status
@@ -368,8 +371,8 @@ end
 
 # --- Script entrypoint ---
 init_script $argv
-check_command buku rofi notify-send awk
 handle_arguments $argv
+check_command buku rofi notify-send awk
 main $argv
 
 if set -q _flag_d
