@@ -15,7 +15,7 @@ function display_help
     echo "  • Interactive bookmark search and open"
     echo "  • Add, edit, delete bookmarks"
     echo "  • Search Tags"
-    echo "  • Clipboard support"    
+    echo "  • Clipboard support"
     echo "  • Debug logging (enable with -d/--debug)"
     echo ""
     echo "Dependencies:"
@@ -101,7 +101,7 @@ end
 function rofi-dialog
     set -l entries $argv[1]
     set -l theme $argv[2]
-    echo $entries | rofi -theme-str $theme 
+    echo $entries | rofi -theme-str $theme
 end
 
 # Function to display a confirmation dialog in rofi and return true/false.
@@ -266,7 +266,7 @@ function auto-filter
     switch $auto_filter[1]
         case "Save tags to the list"
             if not contains "$auto_filter[2]" $(cat saved-tags)
-                echo $auto_filter[2] >> saved-tags
+                echo $auto_filter[2] >>saved-tags
             end
             set -g auto_filter[1] $auto_filter[2]
             set -ge auto_filter[2..]
@@ -275,7 +275,7 @@ end
 
 # Function to copy the bookmark URL to the clipboard.
 function copy-url
-    echo $rofi_output[2] | awk '{print $4}'| fish_clipboard_copy
+    echo $rofi_output[2] | awk '{print $4}' | fish_clipboard_copy
 end
 
 # Function to search for tags using buku and rofi.
@@ -337,11 +337,10 @@ end
 # --- Script entrypoint ---
 
 init_script $argv
-check_command buku rofi notify-send awk 
+check_command buku rofi notify-send awk
 handle_arguments $argv
 main $argv
 
 if set -q _flag_d
     set -e fish_trace
 end
-
