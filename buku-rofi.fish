@@ -23,6 +23,11 @@ function display_help
     echo "  • rofi"
     echo "  • notify-send"
     echo "  • awk"
+    echo ""
+    echo "Portability:"
+    echo "  • Tested on Fish 3.x and 2.7.x. Some features may not work on older Fish versions."
+    echo ""
+    echo "For bug reports or feature requests, please open an issue on GitHub."
     exit 0
 end
 
@@ -45,10 +50,40 @@ end
 
 # Check that required external commands are available.
 function check_command --description "Ensure all required external commands are present."
+    set missing_cmds
     for cmd in $argv
         if not command -s $cmd >/dev/null
-            echo "$script_name: Command '$cmd' not found. To install it, use: sudo apt install $cmd"
-            exit 1
+            set missing_cmds $missing_cmds $cmd
+        end
+    end
+    if set -q missing_cmds[1]
+        echo "$script_name: The following required commands are missing: $missing_cmds"
+        # Try to suggest install commands based on OS
+        if test -f /etc/os-release
+            set os_id (grep "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+            switch $os_id
+                case ubuntu debian linuxmint
+                    echo "To install, run: sudo apt install $missing_cmds"
+                case arch artix
+                    echo "To install, run: sudo pacman -S $missing_cmds"
+                case fedora rhel centos
+                    echo "To install, run: sudo dnf install $missing_cmds"
+                case opensuse
+                    echo "To install, run: sudo zypper install $missing_cmds"
+                case '*'
+                    echo "Please install the required commands using your package manager."
+            end
+        else
+            echo "Please install the required commands using your system's package manager."
+        end
+        exit 1
+    end
+    # Fish version check for portability
+    set min_version 2.7.0
+    set current_version (fish --version | string match -r '\d+\.\d+\.\d+')
+    if test (count $current_version) -eq 1
+        if not test (string compare --order $current_version $min_version) -ge 0
+            echo "$script_name: Warning: Your Fish version ($current_version) may be too old. Some features may not work as expected."
         end
     end
 end
@@ -68,12 +103,18 @@ end
 
 # Export bookmarks to a file using buku.
 function buku_export --description "Export bookmarks to a file."
+    if not set -q export_file
+        set export_file "$HOME/buku_export.json"
+    end
     buku -e $export_file
     echo "$script_name: Bookmarks exported to $export_file"
 end
 
 # Import bookmarks from a file using buku.
 function buku_import --description "Import bookmarks from a file."
+    if not set -q import_file
+        set import_file "$HOME/buku_export.json"
+    end
     if test -f $import_file
         buku -i $import_file
         echo "$script_name: Bookmarks imported from $import_file"
