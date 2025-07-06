@@ -1,8 +1,8 @@
 #!/usr/bin/env fish
 # @SPREEKDOS/buku-rofi/buku-rofi.fish:v1.0.0
-#TODO use AI to generate tags when adding bookmark
+# TODO: use AI to generate tags when adding bookmark
 
-# Function to display help
+# Display usage and help information.
 function display_help
     echo "Usage: $script_name [options]"
     echo "Options:"
@@ -26,8 +26,8 @@ function display_help
     exit 0
 end
 
-# Function to handle command-line arguments and flags.
-function handle_arguments
+# Handle command-line arguments and flags.
+function handle_arguments --description "Parse and act on CLI flags."
     argparse --name "$script_name" d/debug h/help e/export i/import -- $argv
     if set -q _flag_d
         set -g fish_trace 1
@@ -36,15 +36,15 @@ function handle_arguments
         display_help
     end
     if set -q _flag_e
-        buku-export
+        buku_export
     end
     if set -q _flag_i
-        buku-import
+        buku_import
     end
 end
 
-# Function to check if required commands are available.
-function check_command
+# Check that required external commands are available.
+function check_command --description "Ensure all required external commands are present."
     for cmd in $argv
         if not command -s $cmd >/dev/null
             echo "$script_name: Command '$cmd' not found. To install it, use: sudo apt install $cmd"
@@ -53,8 +53,8 @@ function check_command
     end
 end
 
-# Function to initialize script-level settings and variables.
-function init_script
+# Initialize script-level settings and variables.
+function init_script --description "Initialize script name and UI variables."
     set -g script_name (status basename)
     set -g disable_defined_custom_keybind 'configuration { kb-custom-1 : "" ;
     kb-custom-2 : "" ; 
@@ -66,14 +66,14 @@ function init_script
     set -g matching_buku normal
 end
 
-# Function to export bookmarks to a file using buku.
-function buku-export
+# Export bookmarks to a file using buku.
+function buku_export --description "Export bookmarks to a file."
     buku -e $export_file
     echo "$script_name: Bookmarks exported to $export_file"
 end
 
-# Function to import bookmarks from a file using buku.
-function buku-import
+# Import bookmarks from a file using buku.
+function buku_import --description "Import bookmarks from a file."
     if test -f $import_file
         buku -i $import_file
         echo "$script_name: Bookmarks imported from $import_file"
@@ -82,35 +82,34 @@ function buku-import
     end
 end
 
-# Wrapper function for buku CLI.
-function buku
-    command buku --nc --np $argv #--tacit 
+# Wrapper for buku CLI.
+function buku --description "Call buku CLI with common flags."
+    command buku --nc --np $argv # --tacit
 end
 
-# Wrapper function for rofi CLI.
-function rofi
+# Wrapper for rofi CLI.
+function rofi --description "Call rofi with default options and theme."
     command rofi -dmenu -replace -no-custom -i -no-click-to-exit -theme "buku-rofi.rasi" $argv
 end
 
-# Wrapper function for notify-send CLI.
-function notify-send
+# Wrapper for notify-send CLI.
+function notify_send --description "Send a desktop notification."
     command notify-send --app-name=$script_name --urgency=low --expire-time=2500 $argv
 end
 
-# Function to open a rofi dialog with given entries and theme.
-function rofi-dialog
+# Open a rofi dialog with given entries and theme.
+function rofi_dialog --description "Show a rofi dialog with entries and theme."
     set -l entries $argv[1]
     set -l theme $argv[2]
     echo $entries | rofi -theme-str $theme
 end
 
-# Function to display a confirmation dialog in rofi and return true/false.
-function confirm-rofi
-    set confirm_rofi_answer (rofi-dialog "Yes\nCancel" "$disable_defined_custom_keybind
+# Display a confirmation dialog in rofi.
+function confirm_rofi --description "Confirm an action with the user."
+    set confirm_rofi_answer (rofi_dialog "Yes\nCancel" "$disable_defined_custom_keybind
     mainbox { children : [textbox-confirm, listview] ;}
     textbox-confirm {content : \"$script_name | $argv \"; }
-    listview { layout :  horizontal ;
-        spacing : 15 ;}")
+    listview { layout :  horizontal ; spacing : 15 ;}")
     switch $confirm_rofi_answer
         case Yes
             return 0
@@ -119,14 +118,12 @@ function confirm-rofi
     end
 end
 
-# Function to display an error dialog in rofi, and handle retry/return.
-function error-rofi
-    set error_rofi_answer (rofi-dialog "Retry\nReturn" "$disable_defined_custom_keybind
-    mainbox { 
-    children : [ textbox-error, listview ] ;}
-        textbox-error { content : \"$script_name | $argv[1] : \" ;}
-        listview { layout :  horizontal ;
-        spacing : 15 ;}")
+# Display an error dialog in rofi, and handle retry/return.
+function error_rofi --description "Show error dialog with Retry/Return options."
+    set error_rofi_answer (rofi_dialog "Retry\nReturn" "$disable_defined_custom_keybind
+    mainbox { children : [ textbox-error, listview ] ;}
+    textbox-error { content : \"$script_name | $argv[1] : \" ;}
+    listview { layout :  horizontal ; spacing : 15 ;}")
     switch $error_rofi_answer
         case Retry
             $argv[2]
@@ -137,49 +134,46 @@ function error-rofi
     end
 end
 
-# Function to open a bookmark in the default browser via buku.
-function open-buku
+# Open a bookmark in the default browser via buku.
+function open_buku --description "Open the selected bookmark."
     buku --open $rofi_output[1]
 end
 
-# Function to add a bookmark via buku, with optional tags and title.
-function add-buku
+# Add a bookmark via buku, with optional tags and title.
+function add_buku --description "Add a new bookmark with buku."
     if not test -z "$argv"
-        set bookmark_url $(string replace ' ' '' $(string match --regex '^.*?\s+' "$argv" ))
-        set bookmark_tags $(string match --regex '\s+?.*,+?\s\w+' "$argv")
-        set bookmark_title $(string replace '^\s+' '' $(string replace "$bookmark_url$(string replace '^\s+' '' $bookmark_tags)" '' "$argv" ) )
+        set bookmark_url (string replace ' ' '' (string match --regex '^.*?\s+' "$argv"))
+        set bookmark_tags (string match --regex '\s+?.*,+?\s\w+' "$argv")
+        set bookmark_title (string replace '^\s+' '' (string replace "$bookmark_url"(string replace '^\s+' '' $bookmark_tags) '' "$argv"))
         if test -z "$bookmark_title"
             buku --add $bookmark_url --tag $bookmark_tags
         else
             buku --add $bookmark_url --tag $bookmark_tags --title $bookmark_title
         end
-        or error-rofi "buku exited with error $status"
-        notify-send "$script_name: Added bookmark to buku" "Bookmark details
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Added bookmark to buku" "Bookmark details
 URL : $bookmark_url
 Tags : $bookmark_tags
 $(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
         return 0
     end
 
-    set bookmark_url $(string replace ' ' '' $(command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Enter URL of the new bookmark" -format f -theme-str "$disable_defined_custom_keybind
-    mainbox { children : [Inputbar] ;}
-    entry { placeholder : 'URL' ; }"))
+    set bookmark_url (string replace ' ' '' (command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Enter URL of the new bookmark" -format f -theme-str "$disable_defined_custom_keybind
+    mainbox { children : [Inputbar] ;} entry { placeholder : 'URL' ; }"))
     if test -z "$bookmark_url"
         main
     end
-    set bookmark_url "$(string replace --regex https?:// '' $bookmark_url)"
+    set bookmark_url (string replace --regex https?:// '' $bookmark_url)
     set bookmark_url (string trim --right --chars='/' $bookmark_url)
-    set second_prompt $(echo -e "Save\0permanent\x1ftrue\nAdd title\0permanent\x1ftrue" | command rofi -dmenu -format s\nf -replace -i -no-click-to-exit -theme buku-rofi.rasi -p "$script_name | Enter tags for the new bookmark" -theme-str "$disable_defined_custom_keybind
-    mainbox { children : [Inputbar, listview] ;} entry { placeholder : 'tag1, tag2, tag3, ...' ; }
-    listview { layout :  horizontal ;
-        spacing : 15 ;}")
+    set second_prompt (echo -e "Save\0permanent\x1ftrue\nAdd title\0permanent\x1ftrue" | command rofi -dmenu -format s\nf -replace -i -no-click-to-exit -theme buku-rofi.rasi -p "$script_name | Enter tags for the new bookmark" -theme-str "$disable_defined_custom_keybind
+    mainbox { children : [Inputbar, listview] ;} entry { placeholder : 'tag1, tag2, tag3, ...' ; } listview { layout :  horizontal ; spacing : 15 ;}")
     set bookmark_tags "$second_prompt[2]"
     if test -z "$bookmark_tags"
-        error-rofi "Tags field is empty" add-buku
+        error_rofi "Tags field is empty" add_buku
     end
     switch $second_prompt[1]
         case 'Add title'
-            set bookmark_title $(command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Enter title of the new bookmark" -format f -theme-str "$disable_defined_custom_keybind
+            set bookmark_title (command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Enter title of the new bookmark" -format f -theme-str "$disable_defined_custom_keybind
             mainbox { children : [Inputbar] ;}
         entry { placeholder : 'Title' ; }")
     end
@@ -188,49 +182,47 @@ $(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
     else
         buku --add $bookmark_url --tag $bookmark_tags --title $bookmark_title
     end
-    or error-rofi "buku exited with error $status"
-    and notify-send "$script_name: Added bookmark to buku" "Bookmark details
-    URL : $bookmark_url
-    tags : $bookmark_tags
-    $(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
-
-end
-
-# Function to delete a bookmark using buku, with confirmation dialog.
-function delete-buku
-    if confirm-rofi "Ary you sure you want to delete : $rofi_output[2]"
-        echo y | command buku --nostdin --np --nc --delete $rofi_output[1]
-    end
-end
-
-# Function to edit an existing bookmark via buku and rofi.
-function edit-buku
-    set edited_bookmark $(echo -e "Save\0permanent\x1ftrue\nCancel\0permanent\x1ftrue" | command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Edit the bookmark" -format s\nf -filter "$rofi_output[2]" -theme-str "$disable_defined_custom_keybind
-    mainbox { children : [Inputbar,listview] ;}
-    entry { placeholder : 'New bookmark' ; }
-    listview { layout : horizontal ;
-    spacing : 15 ;}")
-    switch $edited_bookmark[1]
-        case Cancel ''
-            main
-    end
-    set bookmark_url $(string replace ' ' '' $(string match --regex '^.*?\s+' "$edited_bookmark" ))
-    set bookmark_tags $(string match --regex '\s+?.*,+?\s\w+' "$edited_bookmark")
-    set bookmark_title $(string replace '^\s+' '' $(string replace "$bookmark_url$(string replace '^\s+' '' $bookmark_tags)" '' "$edited_bookmark" ) )
-    if test -z "$bookmark_title"
-        buku --update $bookmark_url --tag $bookmark_tags
-    else
-        buku --update $bookmark_url --tag $bookmark_tags --title $bookmark_title
-    end
-    or error-rofi "buku exited with error $status"
-    and notify-send "$script_name: Edited bookmark in buku" "Bookmark new details
+    or error_rofi "buku exited with error $status"
+    and notify_send "$script_name: Added bookmark to buku" "Bookmark details
 URL : $bookmark_url
 Tags : $bookmark_tags
 $(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
 end
 
-# Function to toggle hiding the result list in rofi UI.
-function hide-results
+# Delete a bookmark using buku, with confirmation dialog.
+function delete_buku --description "Delete the selected bookmark."
+    if confirm_rofi "Are you sure you want to delete : $rofi_output[2]"
+        echo y | command buku --nostdin --np --nc --delete $rofi_output[1]
+    end
+end
+
+# Edit an existing bookmark via buku and rofi.
+function edit_buku --description "Edit the selected bookmark."
+    set edited_bookmark (echo -e "Save\0permanent\x1ftrue\nCancel\0permanent\x1ftrue" | command rofi -dmenu -replace -i -no-click-to-exit -theme "buku-rofi.rasi" -p "$script_name | Edit the bookmark" -format s\nf -filter "$rofi_output[2]" -theme-str "$disable_defined_custom_keybind
+    mainbox { children : [Inputbar,listview] ;}
+    entry { placeholder : 'New bookmark' ; }
+    listview { layout : horizontal ; spacing : 15 ;}")
+    switch $edited_bookmark[1]
+        case Cancel ''
+            main
+    end
+    set bookmark_url (string replace ' ' '' (string match --regex '^.*?\s+' "$edited_bookmark"))
+    set bookmark_tags (string match --regex '\s+?.*,+?\s\w+' "$edited_bookmark")
+    set bookmark_title (string replace '^\s+' '' (string replace "$bookmark_url"(string replace '^\s+' '' $bookmark_tags) '' "$edited_bookmark"))
+    if test -z "$bookmark_title"
+        buku --update $bookmark_url --tag $bookmark_tags
+    else
+        buku --update $bookmark_url --tag $bookmark_tags --title $bookmark_title
+    end
+    or error_rofi "buku exited with error $status"
+    and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
+URL : $bookmark_url
+Tags : $bookmark_tags
+$(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
+end
+
+# Toggle hiding the result list in rofi UI.
+function hide_results --description "Toggle the result list display in UI."
     if set -q hide_results
         set -e hide_results
     else
@@ -246,26 +238,24 @@ function hide-results
     end
 end
 
-# Function to select matching strategy for rofi search.
-function matching-buku
-    set -g matching_buku $(echo normal\nregex\nglob\nfuzzy\nprefix | rofi -p "$script_name | Choose matching type" -theme-str "$disable_defined_custom_keybind
+# Select matching strategy for rofi search.
+function matching_buku --description "Select a bookmark search matching strategy."
+    set -g matching_buku (echo normal\nregex\nglob\nfuzzy\nprefix | rofi -p "$script_name | Choose matching type" -theme-str "$disable_defined_custom_keybind
     mainbox { children : [Inputbar, listview] ;}
     Inputbar {children : [prompt, textbox-prompt-sep]; }
-    listview { layout : horizontal ;
-    spacing : 15 ;}")
-
+    listview { layout : horizontal ; spacing : 15 ;}")
 end
 
-# Function for auto-filtering tags in search.
-function auto-filter
+# For auto-filtering tags in search.
+function auto_filter --description "Auto-filter tags in search."
     set -ge previous_filter
-    set saved_tags "$(cat saved-tags)"
-    set -g auto_filter $(echo -e "$(if test -n "$saved_tags" ; echo "$saved_tags\n" ; end)Save tags from search query\0permanent\x1ftrue" | rofi -p "$script_name | Auto filter" -format s\nf -theme-str "$disable_defined_custom_keybind
+    set saved_tags (cat saved-tags)
+    set -g auto_filter (echo -e (test -n "$saved_tags" ; and echo "$saved_tags\n")"Save tags from search query\0permanent\x1ftrue" | rofi -p "$script_name | Auto filter" -format s\nf -theme-str "$disable_defined_custom_keybind
         mainbox { children : [Inputbar, listview] ;}
         Inputbar { children : [prompt, textbox-prompt-sep, entry]; }")
     switch $auto_filter[1]
         case "Save tags to the list"
-            if not contains "$auto_filter[2]" $(cat saved-tags)
+            if not contains "$auto_filter[2]" (cat saved-tags)
                 echo $auto_filter[2] >>saved-tags
             end
             set -g auto_filter[1] $auto_filter[2]
@@ -273,37 +263,38 @@ function auto-filter
     end
 end
 
-# Function to copy the bookmark URL to the clipboard.
-function copy-url
-    echo $rofi_output[2] | awk '{print $4}' | fish_clipboard_copy
+# Copy the bookmark URL to the clipboard.
+function copy_url --description "Copy the bookmark URL to clipboard."
+    set bookmark_url (echo $rofi_output[2] | string trim | string split -f 4 --no-empty ' ')
+    fish_clipboard_copy $bookmark_url
 end
 
-# Function to search for tags using buku and rofi.
-function search-tags
+# Search for tags using buku and rofi.
+function search_tags --description "Search for tags and copy to clipboard."
     set -g search_tags $(buku --format 2 --print | awk '{print $3}')
     set -g search_tags $(echo $search_tags | rofi -p "$script_name | Search tags" -theme-str "$disable_defined_custom_keybind
         mainbox { children : [Inputbar, listview] ;}
         Inputbar { children : [prompt, textbox-prompt-sep, entry]; }")
-    echo $search_tags | fish_clipboard_copy
+    fish_clipboard_copy $search_tags
 end
 
-# Function for the main loop and UI of the bookmark manager.
-function main
+# Main loop and UI of the bookmark manager.
+function main --description "Main UI loop for the bookmark manager."
     while true
         if not set -q auto_filter
             set -g previous_filter $rofi_output[3]
         end
-        set bookmarks $(buku --format 4 --print | awk -F ' ' '{print "[ " $1 " ]   " $2 "   " $NF }')
-        set -g rofi_output $(echo -e "$(if test -n "$bookmarks" ; echo $bookmarks"\n" ; end)Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
+        set bookmarks (buku --format 4 --print | awk -F ' ' '{print "[ " $1 " ]   " $2 "   " $NF }')
+        set -g rofi_output (echo -e (test -n "$bookmarks" ; and echo $bookmarks"\n")"Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
         $hide_results
         textbox-matching {content : \"$matching_buku\" ;  }")
         switch $status
             case 0
                 switch $rofi_output[2]
-                    case "Add search quary as bookmark"
-                        add-buku "$rofi_output[3]"
+                    case "Add search query as bookmark"
+                        add_buku "$rofi_output[3]"
                     case '*'
-                        open-buku
+                        open_buku
                         and return 0
                 end
             case 1
@@ -311,22 +302,22 @@ function main
             case 65
                 exit 1
             case 10
-                matching-buku
+                matching_buku
             case 11
-                add-buku
+                add_buku
             case 12
-                delete-buku
+                delete_buku
             case 13
-                edit-buku
+                edit_buku
             case 14
-                hide-results
+                hide_results
             case 15
-                auto-filter
+                auto_filter
                 main
             case 16
-                copy-url
+                copy_url
             case 17
-                search-tags
+                search_tags
         end
         if set -q auto_filter
             set -ge auto_filter
@@ -335,7 +326,6 @@ function main
 end
 
 # --- Script entrypoint ---
-
 init_script $argv
 check_command buku rofi notify-send awk
 handle_arguments $argv
