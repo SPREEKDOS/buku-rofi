@@ -10,6 +10,8 @@ configuration {
     kb-custom-4 : "Insert"; // return code is 13
     kb-custom-5 : "Alt+q"; // return code is 14
     kb-custom-6 : "Alt+1"; // return code is 15
+    kb-custom-7 : "Alt+c"; // return code is 16
+    kb-custom-8 : "Alt+t"; // return code is 17
 }
 * {
     font :  "Awasome 12" ;
@@ -45,12 +47,12 @@ listview {
     dynamic : true ;
 }
 textbox-hint-left {
-    content : "<span font_scale='subscript' >       Alt+W : Show options         Alt+1 : Use saved tags         Alt+A : Add bookmark         Alt+Q : Hide listview        </span>" ;
+    content : "<span font_scale='subscript' >       Alt+W : Show options         Alt+1 : Saved tags         Alt+t : Search tags         Alt+A : Add bookmark         Alt+Q : Hide listview        </span>" ;
     horizontal-align : 0 ;
     markup : true ;
 }
 textbox-hint-right {
-    content : "<span font_scale='subscript' >       Insert Key : Edit bookmark          Delete Key : Delete bookmark      </span>" ;
+    content : "<span font_scale='subscript' >Copy URL : Alt+c         Insert Key : Edit bookmark          Delete Key : Delete bookmark      </span>" ;
     horizontal-align : 1 ;
     markup : true ;
 }

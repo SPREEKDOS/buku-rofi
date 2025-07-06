@@ -1,10 +1,6 @@
 #!/usr/bin/env fish
 # @SPREEKDOS/buku-rofi/buku-rofi.fish:v1.0.0
-#TODO add tags searching
-#TODO remember last prompt before switching between functions?
-#TODO Copy URLs or titles to clipboard
-#TODO use ai to generate tags when adding bookmark
-#TODO strip trailing slash
+#TODO use AI to generate tags when adding bookmark
 
 # Function to display help
 function display_help
@@ -18,8 +14,8 @@ function display_help
     echo "Features:"
     echo "  • Interactive bookmark search and open"
     echo "  • Add, edit, delete bookmarks"
-    echo "  • Tag-based filtering (TODO)"
-    echo "  • Clipboard support (TODO)"
+    echo "  • Search Tags"
+    echo "  • Clipboard support"    
     echo "  • Debug logging (enable with -d/--debug)"
     echo ""
     echo "Dependencies:"
@@ -68,7 +64,6 @@ function init_script
     kb-custom-6 : "" ;
     }'
     set -g matching_buku normal
-    set -g auto_filter ""
 end
 
 # Function to export bookmarks to a file
@@ -81,9 +76,9 @@ end
 function buku-import
     if test -f $import_file
         buku -i $import_file
-        error_rofi "Bookmarks imported from $import_file"
+        echo "$script_name: Bookmarks imported from $import_file"
     else
-        error-rofi "$import_file not found."
+        echo "$script_name: $import_file not found."
     end
 end
 
@@ -102,7 +97,7 @@ function rofi-dialog
     echo $entries | rofi -theme-str $theme 
 end
 
-# Function to dsiplay confirm dialog in rofi
+# Function to display confirm dialog in rofi
 function confirm-rofi
     set confirm_rofi_answer (rofi-dialog "Yes\nCancel" "$disable_defined_custom_keybind
     mainbox { children : [textbox-confirm, listview] ;}
@@ -117,7 +112,7 @@ function confirm-rofi
     end
 end
 
-# Function to dsiplay error dialog in rofi
+# Function to display error dialog in rofi
 function error-rofi
     set error_rofi_answer (rofi-dialog "Retry\nReturn" "$disable_defined_custom_keybind
     mainbox { 
@@ -225,11 +220,19 @@ URL : $bookmark_url
 Tags : $bookmark_tags
 $(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
 end
-function hide_results
+function hide-results
     if set -q hide_results
         set -e hide_results
     else
-        set -g hide_results
+        set -g hide_results "mainbox { children : [box-hint, Inputbar, box-hint2] ;}
+            box-hint2 { children : [textbox-hint-listview] ;
+                orientation :  horizontal ;
+                border : 1 0 0 0; }
+            textbox-hint-listview { content : \"<span font_scale='subscript' > Result list is hidden use Alt+Q to unhide it      </span>\" ;
+            horizontal-align : 1 ;
+            markup : true ;
+            color : Red ;}
+            listview {enabled : false ;}"
     end
 end
 function matching-buku
@@ -241,8 +244,9 @@ function matching-buku
 
 end
 function auto-filter
+    set -ge previous_filter
     set saved_tags "$(cat saved-tags)"
-    set -g auto_filter $(echo -e "$(if test -n "$saved_tags" ; echo "$saved_tags\n" ; end)Save tags from search query\0permanent\x1ftrue" | rofi -p "$script_name | Auto-filter" -format s\nf -theme-str "$disable_defined_custom_keybind
+    set -g auto_filter $(echo -e "$(if test -n "$saved_tags" ; echo "$saved_tags\n" ; end)Save tags from search query\0permanent\x1ftrue" | rofi -p "$script_name | Auto filter" -format s\nf -theme-str "$disable_defined_custom_keybind
         mainbox { children : [Inputbar, listview] ;}
         Inputbar { children : [prompt, textbox-prompt-sep, entry]; }")
     switch $auto_filter[1]
@@ -254,29 +258,26 @@ function auto-filter
             set -ge auto_filter[2..]
     end
 end
-
+function copy-url
+    echo $rofi_output[2] | awk '{print $4}'| fish_clipboard_copy
+end
+function search-tags
+    set -g search_tags $(buku --format 2 --print | awk '{print $3}')
+    set -g search_tags $(echo $search_tags | rofi -p "$script_name | Search tags" -theme-str "$disable_defined_custom_keybind
+        mainbox { children : [Inputbar, listview] ;}
+        Inputbar { children : [prompt, textbox-prompt-sep, entry]; }")
+    echo $search_tags | fish_clipboard_copy
+end
 # Function to main loop
 function main
-    argparse --name $script_name h/help -- $argv
     while true
-        if not set -q matching_buku
-            set -g matching_buku normal
+        if not set -q auto_filter
+            set -g previous_filter $rofi_output[3]
         end
         set bookmarks $(buku --format 4 --print | awk -F ' ' '{print "[ " $1 " ]   " $2 "   " $NF }')
-        if not set -q hide_results
-            set -g rofi_output $(echo -e "$(if test -n "$bookmarks" ; echo $bookmarks"\n" ; end )Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter" -theme-str "textbox-matching { content : \"$matching_buku\" ;  }" )
-        else
-            set -g rofi_output $(echo -e "$(if test -n "$bookmarks" ; echo $bookmarks"\n" ; end)Add search query as bookmark\0permanent\x1ftrue" | rofi -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter" -theme-str "$disable_defined_custom_keybind
-            mainbox { children : [box-hint, Inputbar, box-hint2] ;}
-            box-hint2 { children : [textbox-hint-listview] ;
-                orientation :  horizontal ;
-                border : 1 0 0 0; }
-            textbox-hint-listview { content : \"<span font_scale='subscript' > Result list is hidden use Alt+Q to unhide it      </span>\" ;
-            horizontal-align : 1 ;
-            markup : true ;}
-            listview {enabled : false ;}
-            textbox-matching {content : \"$matching_buku\" ;  }")
-        end
+        set -g rofi_output $(echo -e "$(if test -n "$bookmarks" ; echo $bookmarks"\n" ; end)Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -format d\ns\nf -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
+        $hide_results
+        textbox-matching {content : \"$matching_buku\" ;  }")
         switch $status
             case 0
                 switch $rofi_output[2]
@@ -299,18 +300,22 @@ function main
             case 13
                 edit-buku
             case 14
-                hide_results
+                hide-results
             case 15
                 auto-filter
                 main
+            case 16
+                copy-url
+            case 17
+                search-tags
         end
         if set -q auto_filter
             set -ge auto_filter
         end
     end
 end
-check_command buku rofi notify-send awk 
 init_script $argv
+check_command buku rofi notify-send awk 
 handle_arguments $argv
 main $argv
 
