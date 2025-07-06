@@ -92,6 +92,7 @@ end
 
 # Initialize script-level settings and variables.
 function init_script --description "Initialize script name and UI variables."
+    cd (status dirname)
     set -g script_name (status basename)
     set -g disable_defined_custom_keybind 'configuration { kb-custom-1 : "" ;
     kb-custom-2 : "" ;
