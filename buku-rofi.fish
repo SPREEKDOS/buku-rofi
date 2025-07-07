@@ -189,7 +189,7 @@ function add_buku --description "Add a new bookmark with buku."
         set bookmark_tags (string match --regex '\s+?.*,+?\s\w+' "$argv")
         set bookmark_title (string replace '^\s+' '' (string replace "$bookmark_url"(string replace '^\s+' '' $bookmark_tags) '' "$argv"))
     else
-        set save_or_add_tags_prompt  (string trim (echo -e "Save\0permanent\x1ftrue\nAdd tags\0permanent\x1ftrue" | rofi -p "$script_name | Enter URL of the new bookmark" -theme-str "$simple_theme" -theme-str "entry { placeholder : 'URL' ; }"))
+        set save_or_add_tags_prompt (string trim (echo -e "Save\0permanent\x1ftrue\nAdd tags\0permanent\x1ftrue" | rofi -p "$script_name | Enter URL of the new bookmark" -theme-str "$simple_theme" -theme-str "entry { placeholder : 'URL' ; }"))
         set bookmark_url "$save_or_add_tags_prompt[3]"
         if test -z "$bookmark_url"
             error_rofi "URL field is empty" add_buku
@@ -311,7 +311,7 @@ function search_tags --description "Search for tags and copy to clipboard."
     set -g search_tags "$(buku --format 2 --print | awk '{print $3}' | string split ',')"
     set -g search_tags $(echo "$search_tags" | rofi -p "$script_name | Search tags" -theme-str "$simple_theme" -theme-str "Inputbar { children : [prompt, textbox-prompt-sep, entry]; }
     entry { placeholder : 'Tag' ; }")
-    echo $search_tags[2] |fish_clipboard_copy
+    echo $search_tags[2] | fish_clipboard_copy
 end
 
 # Main loop and UI of the bookmark manager.
