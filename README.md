@@ -7,7 +7,6 @@ A simple integration of [buku](https://github.com/jarun/buku) with [rofi](https:
 - 🚀 Fuzzy search your `buku` bookmarks with the speed of `rofi`
 - 🔗 Open bookmarks directly in your browser
 - 🎨 Minimal, highly customizable interface via `rofi`
-- 🧩 Robust dependency and version checks for trouble-free setup
 - 🛠️ Graceful error messages and portable across major Linux distros
 
 ## Prerequisites
