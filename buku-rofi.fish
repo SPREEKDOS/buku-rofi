@@ -5,7 +5,7 @@
 # TODO: order the indices using --order requires buku v5.0
 # TODO: add search engine tabs?
 # NOTPLANNED: use --normal-window but without the position getting ruined by smart placement
-
+# TODO: generate title using edit
 # Display usage and help information.
 function display_help
     echo "Usage: $script_name [options]"
@@ -253,6 +253,9 @@ function edit_buku --description "Edit the selected bookmark."
     set old_bookmark_url "$old_bookmark[1]"
     set old_bookmark_tags "$old_bookmark[2]"
     set old_bookmark_title $(buku --format 30 --print $rofi_output[1])
+    if test -n $old_bookmark_title
+        set old_bookmark_title "( $old_bookmark_title )"
+    end
 
     set edited_bookmark (rofi_dialog "$script_name | Edit the bookmark" "Save\0permanent\x1ftrue\nCancel\0permanent\x1ftrue" "entry { placeholder : 'New bookmark' ; }" -filter "$old_bookmark_url $old_bookmark_tags $old_bookmark_title")
     switch $edited_bookmark[2]
@@ -261,29 +264,24 @@ function edit_buku --description "Edit the selected bookmark."
     end
     set new_bookmark_url (string split -f 1 ' ' $edited_bookmark[3])
     set new_bookmark_tags (string split -f 2 ' ' $edited_bookmark[3])
-    set new_bookmark_title (string split -f 3 ' ' $edited_bookmark[3])
+    if string match '(' $new_bookmark_tags
+        set -e new_bookmark_tags
+    end
+    set new_bookmark_title (string match -r "\(.*\)"  $edited_bookmark[3] | string replace '( ' '' | string replace ' )' '')
+    if test -z $new_bookmark_title
+        set -e new_bookmark_title
+    end
 
-    if test -n "$new_bookmark_url" -a -z "$new_bookmark_tags" -a -z "$new_bookmark_title"
-        buku --update $rofi_output[1] --url $new_bookmark_url --tag --title
-        or error_rofi "buku exited with error $status"
-        and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
-index: $rofi_output[1]
-URL : $new_bookmark_url"
-    else if test -n "$new_bookmark_url" -a -n "$new_bookmark_tags" -a -z "$new_bookmark_title"
-        buku --update $rofi_output[1] --url $new_bookmark_url --tag $new_bookmark_tags --title
-        or error_rofi "buku exited with error $status"
-        and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
-index: $rofi_output[1]
-URL : $new_bookmark_url
-Tags : $new_bookmark_tags"
-    else if test -n "$new_bookmark_url" -a -n "$new_bookmark_tags" -a -n "$new_bookmark_title"
-        buku --update $rofi_output[1] --url $new_bookmark_url --tag $new_bookmark_tags --title $new_bookmark_title
+    if test -n "$new_bookmark_url"
+    buku --update $rofi_output[1] --url $new_bookmark_url --tag $new_bookmark_tags --title $new_bookmark_title
         or error_rofi "buku exited with error $status"
         and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
 index: $rofi_output[1]
 URL : $new_bookmark_url
 Tags : $new_bookmark_tags
 Title : $new_bookmark_title"
+    else
+        error_rofi "Input is mulformed"
     end
 end
 
