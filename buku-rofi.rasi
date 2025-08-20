@@ -41,7 +41,6 @@ Inputbar {
     spacing : 5 ;
 }
 listview {
-    anchor : north ;
     expand : false ;
     fixed-height: false ;
     dynamic : true ;
@@ -69,7 +68,7 @@ entry {
 textbox-pipe {
     expand : false ;
     content : "|" ;
-    
+
 }
 textbox-matching {
     expand : false ;

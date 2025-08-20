@@ -1,6 +1,10 @@
 #!/usr/bin/env fish
 # @SPREEKDOS/buku-rofi/buku-rofi.fish:v1.0.0
 # TODO: use AI to generate tags when adding bookmark
+# TODO: auto complete tags to make them consistent
+# TODO: order the indices using --order requires buku v5.0
+# TODO: add search engine tabs?
+# NOTPLANNED: use --normal-window but without the position getting ruined by smart placement
 
 # Display usage and help information.
 function display_help
@@ -19,6 +23,7 @@ function display_help
     echo "  • Debug logging (enable with -d/--debug)"
     echo ""
     echo "Dependencies:"
+    echo "  • fish"
     echo "  • buku"
     echo "  • rofi"
     echo "  • notify-send"
@@ -102,15 +107,14 @@ function init_script --description "Initialize script name and UI variables."
     kb-custom-6 : "" ;
     }
     mainbox { children : [Inputbar, listview] ;}
-    Inputbar {children : [prompt, textbox-prompt-sep]; }
-    listview { layout :  horizontal ; spacing : 15 ;}'
+    Inputbar {children : [prompt, textbox-prompt-sep, entry]; }'
     set -g matching_buku normal
 end
 
 # Export bookmarks to a file using buku.
 function buku_export --description "Export bookmarks to a file."
     if not set -q export_file
-        set export_file "$HOME/buku_export.md"
+        set export_file "$HOME/buku-rofi_export.md"
     end
     buku -e $export_file
     echo "$script_name: Bookmarks exported to $export_file"
@@ -119,7 +123,7 @@ end
 # Import bookmarks from a file using buku.
 function buku_import --description "Import bookmarks from a file."
     if not set -q import_file
-        set import_file "$HOME/buku_export.md"
+        set import_file "$HOME/buku-rofi_export.md"
     end
     if test -f $import_file
         echo n\ny | command buku --nostdin --np --nc -i $import_file
@@ -132,7 +136,7 @@ end
 
 # Wrapper for buku CLI.
 function buku --description "Call buku CLI with common flags."
-    command buku --nc --np $argv # --tacit
+    command buku --nostdin --nc --np --tacit $argv
 end
 
 # Wrapper for rofi CLI.
@@ -149,13 +153,14 @@ end
 function rofi_dialog --description "Show a rofi dialog with entries and theme."
     set -l prompt $argv[1]
     set -l entries $argv[2]
-    set -l theme $argv[3]
-    echo -e $entries | rofi -p $prompt -theme-str $theme
+    set -l theme_str $argv[3]
+    echo -e $entries | rofi -p $prompt -theme-str "$simple_theme" -theme-str $theme_str $argv[4..]
 end
 
 # Display a confirmation dialog in rofi.
 function confirm_rofi --description "Confirm an action with the user."
-    set confirm_rofi_answer (rofi_dialog "$script_name | $argv[1]" "Yes\nCancel" "$simple_theme")
+    set confirm_rofi_answer (rofi_dialog "$script_name | $argv[1]" "Yes\nCancel" "
+        Inputbar {children : [prompt]; }")
     switch $confirm_rofi_answer[2]
         case Yes
             return 0
@@ -166,7 +171,7 @@ end
 
 # Display an error dialog in rofi, and handle retry/return.
 function error_rofi --description "Show error dialog with Retry/Return options."
-    set error_rofi_answer (rofi_dialog "$script_name | $argv[1]" "Retry\nReturn" "$simple_theme")
+    set error_rofi_answer (rofi_dialog "$script_name | $argv[1]" "Retry\nReturn" "        Inputbar {children : [prompt]; }")
     switch $error_rofi_answer[2]
         case Retry
             $argv[2]
@@ -189,21 +194,21 @@ function add_buku --description "Add a new bookmark with buku."
         set bookmark_tags (string match --regex '\s+?.*,+?\s\w+' "$argv")
         set bookmark_title (string replace '^\s+' '' (string replace "$bookmark_url"(string replace '^\s+' '' $bookmark_tags) '' "$argv"))
     else
-        set save_or_add_tags_prompt (string trim (echo -e "Save\0permanent\x1ftrue\nAdd tags\0permanent\x1ftrue" | rofi -p "$script_name | Enter URL of the new bookmark" -theme-str "$simple_theme" -theme-str "entry { placeholder : 'URL' ; }"))
+        set save_or_add_tags_prompt (string trim (rofi_dialog "$script_name | Enter URL of the new bookmark" "Add tags\0permanent\x1ftrue\nSave\0permanent\x1ftrue" "entry { placeholder : 'URL' ; }"))
         set bookmark_url "$save_or_add_tags_prompt[3]"
         if test -z "$bookmark_url"
             error_rofi "URL field is empty" add_buku
         end
         switch $save_or_add_tags_prompt[2]
             case 'Add tags'
-                set save_or_add_title_prompt (echo -e "Save\0permanent\x1ftrue\nAdd title\0permanent\x1ftrue" | rofi -p "$script_name | Enter tags for the new bookmark" -theme-str "$simple_theme" -theme-str "entry { placeholder : 'tag1, tag2, tag3, ...' ; }")
+                set save_or_add_title_prompt (rofi_dialog "$script_name | Enter tags for the new bookmark" "Add title\0permanent\x1ftrue\nSave\0permanent\x1ftrue" "entry { placeholder : 'tag1, tag2, tag3, ...' ; }")
                 set bookmark_tags "$save_or_add_title_prompt[3]"
                 if test -z "$bookmark_tags"
                     error_rofi "Tags field is empty" add_buku
                 end
                 switch $save_or_add_title_prompt[2]
                     case 'Add title'
-                        set bookmark_title (echo "Save\0permanent\x1ftrue" | rofi -p "$script_name | Enter title of the new bookmark" -format f -theme-str "$simple_theme" -theme-str "entry { placeholder : 'Title' ; }")
+                        set bookmark_title (rofi_dialog "$script_name | Enter title of the new bookmark" "Save\0permanent\x1ftrue" "entry { placeholder : 'Title' ; }")
                         if test -z "$bookmark_title"
                             error_rofi "Title field is empty" add_buku
                         end
@@ -214,18 +219,25 @@ function add_buku --description "Add a new bookmark with buku."
     set bookmark_url (string replace --regex https?:// '' $bookmark_url)
     set bookmark_url (string trim --right --chars='/' $bookmark_url)
     set bookmark_url (string replace --regex www. '' $bookmark_url)
-    if test -z "$bookmark_title" -a -z "$bookmark_tags"
+    if test -n "$bookmark_url" -a -z "$bookmark_tags" -a -z "$bookmark_title"
         buku --add $bookmark_url
-    else if test -z "$bookmark_title"
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Added bookmark to buku" "Bookmark details
+URL : $bookmark_url"
+    else if test -n "$bookmark_url" -a -n "$bookmark_tags" -a -z "$bookmark_title"
         buku --add $bookmark_url --tag $bookmark_tags
-    else
-        buku --add $bookmark_url --tag $bookmark_tags --title $bookmark_title
-    end
-    or error_rofi "buku exited with error $status"
-    and notify_send "$script_name: Added bookmark to buku" "Bookmark details
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Added bookmark to buku" "Bookmark details
 URL : $bookmark_url
-$(test -z "$bookmark_tags"; and echo Title : $bookmark_tags)
-$(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
+Tags : $bookmark_tags"
+    else if test -n "$bookmark_url" -a -n "$bookmark_tags" -a -n "$bookmark_title"
+        buku --add $bookmark_url --tag $bookmark_tags --title $bookmark_title
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Added bookmark to buku" "Bookmark details
+URL : $bookmark_url
+Tags : $bookmark_tags
+Title : $bookmark_title"
+    end
 end
 
 # Delete a bookmark using buku, with confirmation dialog.
@@ -237,26 +249,42 @@ end
 
 # Edit an existing bookmark via buku and rofi.
 function edit_buku --description "Edit the selected bookmark."
-    set edited_bookmark (echo -e "Save\0permanent\x1ftrue\nCancel\0permanent\x1ftrue" | rofi -p "$script_name | Edit the bookmark" -filter "$rofi_output[2]" -theme-str "$simple_theme" -theme-str "entry { placeholder : 'New bookmark' ; }")
+    set old_bookmark $(buku --format 20 --print $rofi_output[1] | string split \t )
+    set old_bookmark_url "$old_bookmark[1]"
+    set old_bookmark_tags "$old_bookmark[2]"
+    set old_bookmark_title $(buku --format 30 --print $rofi_output[1])
+
+    set edited_bookmark (rofi_dialog "$script_name | Edit the bookmark" "Save\0permanent\x1ftrue\nCancel\0permanent\x1ftrue" "entry { placeholder : 'New bookmark' ; }" -filter "$old_bookmark_url $old_bookmark_tags $old_bookmark_title")
     switch $edited_bookmark[2]
         case Cancel ''
             main
     end
-    set bookmark_url (string replace ' ' '' (string match --regex '^.*?\s+' "$edited_bookmark"))
-    set bookmark_tags (string match --regex '\s+?.*,+?\s\w+' "$edited_bookmark")
-    set bookmark_title (string replace '^\s+' '' (string replace "$bookmark_url"(string replace '^\s+' '' $bookmark_tags) '' "$edited_bookmark"))
-    if test -z "$bookmark_title" -a -z "$bookmark_tags"
-        buku --add $bookmark_url
-    else if test -z "$bookmark_title"
-        buku --add $bookmark_url --tag $bookmark_tags
-    else
-        buku --add $bookmark_url --tag $bookmark_tags --title $bookmark_title
+    set new_bookmark_url (string split -f 1 ' ' $edited_bookmark[3])
+    set new_bookmark_tags (string split -f 2 ' ' $edited_bookmark[3])
+    set new_bookmark_title (string split -f 3 ' ' $edited_bookmark[3])
+
+    if test -n "$new_bookmark_url" -a -z "$new_bookmark_tags" -a -z "$new_bookmark_title"
+        buku --update $rofi_output[1] --url $new_bookmark_url --tag --title
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
+index: $rofi_output[1]
+URL : $new_bookmark_url"
+    else if test -n "$new_bookmark_url" -a -n "$new_bookmark_tags" -a -z "$new_bookmark_title"
+        buku --update $rofi_output[1] --url $new_bookmark_url --tag $new_bookmark_tags --title
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
+index: $rofi_output[1]
+URL : $new_bookmark_url
+Tags : $new_bookmark_tags"
+    else if test -n "$new_bookmark_url" -a -n "$new_bookmark_tags" -a -n "$new_bookmark_title"
+        buku --update $rofi_output[1] --url $new_bookmark_url --tag $new_bookmark_tags --title $new_bookmark_title
+        or error_rofi "buku exited with error $status"
+        and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
+index: $rofi_output[1]
+URL : $new_bookmark_url
+Tags : $new_bookmark_tags
+Title : $new_bookmark_title"
     end
-    or error_rofi "buku exited with error $status"
-    and notify_send "$script_name: Edited bookmark in buku" "Bookmark new details
-URL : $bookmark_url
-Tags : $bookmark_tags
-$(test -z "$bookmark_title"; and echo Title : $bookmark_title)"
 end
 
 # Toggle hiding the result list in rofi UI.
@@ -278,7 +306,9 @@ end
 
 # Select matching strategy for rofi search.
 function matching_buku --description "Select a bookmark search matching strategy."
-    set -g matching_buku (echo normal\nregex\nglob\nfuzzy\nprefix | rofi -p "$script_name | Choose matching type" -theme-str "$simple_theme")
+    set -g matching_buku (rofi_dialog "$script_name | Choose matching type" "normal\nregex\nglob\nfuzzy\nprefix" "$simple_theme
+        Inputbar {children : [prompt]; }
+        listview { layout :  horizontal ; spacing : 15 ;}")
     set -g matching_buku[1] $matching_buku[2]
     set -ge matching_buku[2..]
     echo $matching_buku
@@ -286,17 +316,19 @@ end
 
 # For auto-filtering tags in search.
 function auto_filter --description "Auto-filter tags in search."
-    set -ge previous_filter
     set saved_tags (cat saved-tags)
-    set -g auto_filter (echo -e (test -n "$saved_tags" ; and echo $saved_tags"\n")"Save tags from search query\0permanent\x1ftrue" | rofi -p "$script_name | Auto filter" -theme-str "$simple_theme" -theme-str "Inputbar { children : [prompt, textbox-prompt-sep, entry]; }
-    entry { placeholder : 'Tag' ; }")
+    set -g auto_filter (rofi_dialog "$script_name | Auto filter" (test -n "$saved_tags" ; and echo $saved_tags"\n")"Save tags from search query\0permanent\x1ftrue" "entry { placeholder : 'Tag' ; }
+    listview { layout :  horizontal ; spacing : 15 ;} ")
     switch $auto_filter[2]
         case "Save tags to the list"
             if not contains "$auto_filter[3]" (cat saved-tags)
                 echo $auto_filter[3] >>saved-tags
             end
             set -g auto_filter[2] $auto_filter[3]
-            set -ge auto_filter[3..]
+    end
+    if test -n "$auto_filter[2]"
+        set -ge previous_filter
+        set -g filter $auto_filter[3]
     end
 end
 
@@ -308,20 +340,26 @@ end
 
 # Search for tags using buku and rofi.
 function search_tags --description "Search for tags and copy to clipboard."
-    set -g search_tags "$(buku --format 2 --print | awk '{print $3}' | string split ',')"
-    set -g search_tags $(echo "$search_tags" | rofi -p "$script_name | Search tags" -theme-str "$simple_theme" -theme-str "Inputbar { children : [prompt, textbox-prompt-sep, entry]; }
-    entry { placeholder : 'Tag' ; }")
-    echo $search_tags[2] | fish_clipboard_copy
+    set -g search_tags "$(buku --stag | awk '{print $2}')"
+    set -g search_tags $(rofi_dialog "$script_name | Search tags" "$search_tags" "entry { placeholder : 'Tag' ; }
+        listview { layout :  horizontal ; spacing : 15 ;} ")
+
+    if test -n "$search_tags[2]"
+        set -ge previous_filter
+        set -g filter $search_tags[2]
+    end
 end
 
 # Main loop and UI of the bookmark manager.
 function main --description "Main UI loop for the bookmark manager."
     while true
-        if not set -q auto_filter
+        if test -z "$auto_filter" -a -z "$search_tags"
             set -g previous_filter $rofi_output[3]
+            set -g filter $previous_filter
         end
-        set bookmarks (buku --format 4 --print | awk -F ' ' '{print "[ " $1 " ]   " $2 "   " $NF }')
-        set -g rofi_output (echo -e (test -n "$bookmarks" ; and echo $bookmarks"\n") "Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -matching "$matching_buku" -filter "$auto_filter$previous_filter" -theme-str "
+        set bookmarks (buku --format 2  --print | awk -F ' ' '{print " [ " $1 " ]      " $2 "      " $3 "      " }'  | paste - $(buku --format 30  --print | string replace -ra "^\b" "\( " | string replace -ra "\b\$" " \)" | psub))
+
+        set -g rofi_output (echo -e (test -n "$bookmarks" ; and echo $bookmarks"\n")"Add search query as bookmark\0permanent\x1ftrue" | rofi -p "$script_name" -matching "$matching_buku" -filter "$filter" -theme-str "
         $hide_results
         textbox-matching {content : \"$matching_buku\" ;  }")
         switch $status
@@ -355,8 +393,9 @@ function main --description "Main UI loop for the bookmark manager."
             case 17
                 search_tags
         end
-        if set -q auto_filter
+        if set -q auto_filter -o -q search_tags
             set -ge auto_filter
+            set -ge search_tags
         end
     end
 end
