@@ -2,6 +2,9 @@
 
 A simple integration of [buku](https://github.com/jarun/buku) with [rofi](https://github.com/davatorium/rofi) to quickly search, edit, delete, and open your bookmarks from a rofi launcher interface.
 
+## Example Demo
+![Demo Animation](../assets/demo.gif?raw=true) 
+
 ## Features
 
 - 🚀 Fuzzy search your `buku` bookmarks with the speed of `rofi`
@@ -95,9 +98,6 @@ You can customize these in `buku-rofi.rasi`.
 - Platform-aware install suggestions for missing dependencies.
 - Most major Linux distros supported out-of-the-box.
 
-## Example Demo
-
-![Demo Animation](../assets/demo.gif?raw=true) 
 
 ## Troubleshooting
 
