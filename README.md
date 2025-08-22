@@ -7,7 +7,6 @@ A simple integration of [buku](https://github.com/jarun/buku) with [rofi](https:
 - 🚀 Fuzzy search your `buku` bookmarks with the speed of `rofi`
 - 🔗 Open bookmarks directly in your browser
 - 🎨 Minimal, highly customizable interface via `rofi`
-- 🧩 Robust dependency and version checks for trouble-free setup
 - 🛠️ Graceful error messages and portable across major Linux distros
 
 ## Prerequisites
@@ -19,20 +18,21 @@ Make sure the following tools are installed and available in your `$PATH`:
 - [`notify-send`](https://man7.org/linux/man-pages/man1/notify-send.1.html) — for desktop notifications
 - [`awk`](https://www.gnu.org/software/gawk/) — for text processing
 - [`fish`](https://fishshell.com/) — Version **2.7.0 or higher** recommended (some features require Fish 3+)
+- [`xdg-open`](https://linux.die.net/man/1/xdg-open) — for opening URLs in your default browser
 
 To install dependencies on popular distributions:
 
 - **Debian/Ubuntu**:
   ```sh
-  sudo apt install buku rofi notify-send awk fish
+  sudo apt install buku rofi notify-send awk fish xdg-utils
   ```
 - **Arch Linux/Manjaro**:
   ```sh
-  sudo pacman -S buku rofi libnotify gawk fish
+  sudo pacman -S buku rofi libnotify gawk fish xdg-utils
   ```
 - **Fedora**:
   ```sh
-  sudo dnf install buku rofi libnotify gawk fish
+  sudo dnf install buku rofi libnotify gawk fish xdg-utils
   ```
 
 ## Installation
