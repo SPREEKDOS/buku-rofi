@@ -97,7 +97,7 @@ You can customize these in `buku-rofi.rasi`.
 
 ## Example Demo
 
-![buku-rofi-demo](docs/demo.gif)
+![Demo Animation](../assets/demo.gif?raw=true) 
 
 ## Troubleshooting
 
