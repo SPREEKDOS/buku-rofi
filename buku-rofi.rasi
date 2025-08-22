@@ -62,7 +62,7 @@ entry {
     expand : true ;
     blink : true ;
     placeholder-color : @gruvbox-dark-gray ;
-    placeholder : "example.com  tag1,tag2  (Title)" ;
+    placeholder : "example.com  tag1,tag2,...  (Title)" ;
     cursor : text ;
 }
 textbox-pipe {
