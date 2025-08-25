@@ -3,7 +3,7 @@
 A simple integration of [buku](https://github.com/jarun/buku) with [rofi](https://github.com/davatorium/rofi) to quickly search, edit, delete, and open your bookmarks from a rofi launcher interface.
 
 ## Example Demo
-![Demo Animation](../assets/demo.gif?raw=true) 
+![Demo Animation](../assets/demo.gif?raw=true)
 
 ## Features
 
@@ -89,8 +89,8 @@ You can customize these in `buku-rofi.rasi`.
 
 ## Import/Export
 
-- Export: `buku-rofi --export` (defaults to `~/buku_export.json` if not set)
-- Import: `buku-rofi --import` (defaults to `~/buku_export.json` if not set)
+- Export: `buku-rofi --export` (defaults to `~/buku-rofi_export.md` if not set)
+- Import: `buku-rofi --import` (defaults to `~/buku-rofi_export.md` if not set)
 
 ## Portability Notes
 
